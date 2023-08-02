@@ -1,0 +1,180 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscaminas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+     .board {
+      display: grid;
+      grid-template-columns: repeat(8, 30px);
+      gap: 1px;
+    }
+     .cell {
+      width: 30px;
+      height: 30px;
+      border: 1px solid black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+    }
+     .mine {
+      background-color: red;
+    }
+     .revealed {
+      background-color: lightgray;
+    }
+     #overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
+     #message {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: center;
+      animation: fadein 0.5s;
+    }
+     #score {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+     #name-input {
+      margin-top: 10px;
+      padding: 5px;
+      font-size: 14px;
+    }
+     #player-list {
+      margin-top: 20px;
+      font-size: 16px;
+      text-align: left;
+    }
+     #player-list li {
+      list-style: none;
+      margin-bottom: 5px;
+    }
+     @keyframes fadein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="board"></div>
+   <div id="overlay">
+    <div id="message">
+      <p id="name-message">Ingrese su nombre aquí</p>
+      <p id="saved-message" style="display: none;">Nombre guardado</p>
+      <input id="name-input" type="text" placeholder="Tu nombre">
+      <button id="restart">Reiniciar juego</button>
+    </div>
+  </div>
+   <div id="score">Score: 0</div>
+   <ul id="player-list"></ul>
+   <script>
+    const board = document.querySelector('.board');
+    const overlay = document.getElementById('overlay');
+    const restartButton = document.getElementById('restart');
+    const scoreElement = document.getElementById('score');
+    const nameInput = document.getElementById('name-input');
+    const nameMessage = document.getElementById('name-message');
+    const savedMessage = document.getElementById('saved-message');
+    const playerList = document.getElementById('player-list');
+    const rows = 8;
+    const cols = 8;
+    const totalCells = rows * cols;
+    const totalMines = 5;
+    let minePositions = generateRandomMines(totalMines, totalCells);
+    let score = 0;
+    let players = [];
+     function generateRandomMines(totalMines, totalCells) {
+      const positions = new Set();
+      while (positions.size < totalMines) {
+        const randomPosition = Math.floor(Math.random() * totalCells);
+        positions.add(randomPosition);
+      }
+      return Array.from(positions);
+    }
+     function createBoard() {
+      for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        board.appendChild(cell);
+      }
+    }
+     function revealBoard() {
+      cells.forEach((cell, index) => {
+        if (minePositions.includes(index)) {
+          cell.classList.add('mine');
+          cell.textContent = '💣';
+        } else {
+          cell.classList.add('revealed');
+        }
+      });
+    }
+     createBoard();
+     const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, index) => {
+      cell.addEventListener('click', () => {
+        if (minePositions.includes(index)) {
+          revealBoard();
+          showGameOver();
+        } else {
+          cell.classList.add('revealed');
+          score++;
+          scoreElement.textContent = `Score: ${score}`;
+        }
+      });
+    });
+     restartButton.addEventListener('click', () => {
+      hideGameOver();
+      resetBoard();
+    });
+     function showGameOver() {
+      overlay.style.display = 'flex';
+      nameMessage.style.display = 'block';
+      savedMessage.style.display = 'none';
+      const playerName = nameInput.value || 'Anónimo';
+      players.push({ name: playerName, score: score });
+      updatePlayerList();
+    }
+     function hideGameOver() {
+      overlay.style.display = 'none';
+      nameInput.value = '';
+    }
+     function resetBoard() {
+      cells.forEach((cell) => {
+        cell.classList.remove('mine', 'revealed');
+        cell.textContent = '';
+      });
+      score = 0;
+      scoreElement.textContent = `Score: ${score}`;
+      minePositions = generateRandomMines(totalMines, totalCells);
+    }
+     function updatePlayerList() {
+      playerList.innerHTML = players
+        .map(player => `<li>${player.name}: ${player.score}</li>`)
+        .join('');
+    }
+  </script>
+</body>
+</html>

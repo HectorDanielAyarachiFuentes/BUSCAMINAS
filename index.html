@@ -9,20 +9,26 @@
   body {
     font-family: Arial, sans-serif;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     height: 100vh;
     margin: 0;
+    background-color: #e6f2ff; /* Fondo frío */
   }
-
-  .board {
+   .game-container {
+    display: flex;
+    flex-direction: row;
+  }
+   .game-board {
+    flex: 1;
+    margin-right: 20px; /* Margen entre el buscaminas y el contenedor de la lista */
+  }
+   .board {
     display: grid;
     grid-template-columns: repeat(8, 30px);
     gap: 1px;
   }
-
-  .cell {
+   .cell {
     width: 30px;
     height: 30px;
     border: 1px solid black;
@@ -32,16 +38,13 @@
     font-size: 16px;
     cursor: pointer;
   }
-
-  .mine {
+   .mine {
     background-color: red;
   }
-
-  .revealed {
+   .revealed {
     background-color: lightgray;
   }
-
-  #overlay {
+   #overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -52,74 +55,73 @@
     align-items: center;
     justify-content: center;
   }
-
-  #message {
+   #message {
     background-color: white;
     padding: 20px;
     border-radius: 5px;
     text-align: center;
     animation: fadein 0.5s;
   }
-
-  #score {
-    margin-top: 20px;
-    font-size: 18px;
+   .player-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff; /* Fondo blanco */
+    padding: 20px;
+    border-radius: 5px;
   }
-
-  #name-input {
+   .player-list h2 {
+    margin-bottom: 10px;
+  }
+   .player-list button {
     margin-top: 10px;
-    padding: 5px;
-    font-size: 14px;
   }
-
-  #player-list {
-    margin-top: 20px;
-    font-size: 16px;
-    text-align: left;
-  }
-
-  #player-list li {
+   .player-list ul {
     list-style: none;
-    margin-bottom: 5px;
+    padding: 0;
+    margin: 0;
   }
-
-  @keyframes fadein {
+   @keyframes fadein {
     from { opacity: 0; }
     to { opacity: 1; }
   }
 </style>
 </head>
 <body>
-  <div class="board"></div>
-
-  <div id="overlay">
-    <div id="message">
-      <p>Perdiste!</p>
-      <input id="name-input" type="text" placeholder="Tu nombre">
-      <button id="restart">Reiniciar</button>
+  <div class="game-container">
+    <div class="game-board">
+      <div class="board"></div>
+      <div id="overlay">
+        <div id="message">
+          <p id="game-over-message"></p>
+          <button id="restart">Jugar de nuevo</button>
+        </div>
+      </div>
+    </div>
+    <div class="player-list">
+      <h2>Lista de Jugadores</h2>
+      <input type="text" id="player-name" placeholder="Nombre del jugador">
+      <button onclick="startGame()">Comenzar</button>
+      <ul id="player-scores"></ul>
     </div>
   </div>
-
-  <div id="score">Score: 0</div>
-
-  <ul id="player-list"></ul>
-
   <script>
     const board = document.querySelector('.board');
     const overlay = document.getElementById('overlay');
     const restartButton = document.getElementById('restart');
-    const scoreElement = document.getElementById('score');
-    const nameInput = document.getElementById('name-input');
-    const playerList = document.getElementById('player-list');
+    const playerNameInput = document.getElementById('player-name');
+    const playerScoresList = document.getElementById('player-scores');
+    const gameOverMessage = document.getElementById('game-over-message');
     const rows = 8;
     const cols = 8;
     const totalCells = rows * cols;
     const totalMines = 5;
     let minePositions = generateRandomMines(totalMines, totalCells);
     let score = 0;
-    let players = [];
-
-    function generateRandomMines(totalMines, totalCells) {
+    let startTime = null;
+    let playerName = '';
+     function generateRandomMines(totalMines, totalCells) {
       const positions = new Set();
       while (positions.size < totalMines) {
         const randomPosition = Math.floor(Math.random() * totalCells);
@@ -127,16 +129,14 @@
       }
       return Array.from(positions);
     }
-
-    function createBoard() {
+     function createBoard() {
       for (let i = 0; i < totalCells; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
         board.appendChild(cell);
       }
     }
-
-    function revealBoard() {
+     function revealBoard() {
       cells.forEach((cell, index) => {
         if (minePositions.includes(index)) {
           cell.classList.add('mine');
@@ -146,9 +146,7 @@
         }
       });
     }
-
-    createBoard();
-
+     createBoard();
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, index) => {
       cell.addEventListener('click', () => {
@@ -161,42 +159,52 @@
         } else {
           cell.classList.add('revealed');
           score++;
-          scoreElement.textContent = `Score: ${score}`;
         }
       });
     });
-
-    restartButton.addEventListener('click', () => {
+     restartButton.addEventListener('click', () => {
       hideGameOver();
       resetBoard();
     });
-
-    function showGameOver() {
+     function showGameOver() {
       overlay.style.display = 'flex';
-      const playerName = nameInput.value || 'Anónimo';
-      players.push({ name: playerName, score: score });
-      updatePlayerList();
+      gameOverMessage.textContent = `Perdiste! Score: ${score} - Tiempo: ${getTime()}`;
+      const playerScore = document.createElement('li');
+      playerScore.textContent = `Jugador: ${playerName} - Score: ${score} - Tiempo: ${getTime()}`;
+      playerScoresList.appendChild(playerScore);
     }
-
-    function hideGameOver() {
+     function hideGameOver() {
       overlay.style.display = 'none';
-      nameInput.value = '';
+      playerNameInput.value = '';
     }
-
-    function resetBoard() {
+     function resetBoard() {
       cells.forEach((cell) => {
         cell.classList.remove('mine', 'revealed');
         cell.textContent = '';
       });
       score = 0;
-      scoreElement.textContent = `Score: ${score}`;
       minePositions = generateRandomMines(totalMines, totalCells);
     }
-
-    function updatePlayerList() {
-      playerList.innerHTML = players
-        .map(player => `<li>${player.name}: ${player.score}</li>`)
-        .join('');
+     function startGame() {
+      hideGameOver();
+      resetBoard();
+      startTimer();
+      playerName = playerNameInput.value || 'Anónimo';
+      const playerNameElement = document.createElement('li');
+      playerNameElement.textContent = `Jugador: ${playerName}`;
+      playerScoresList.innerHTML = ''; // Limpiar la lista antes de agregar el nombre
+      playerScoresList.appendChild(playerNameElement);
+    }
+     function startTimer() {
+      startTime = new Date();
+    }
+     function getTime() {
+      if (startTime) {
+        const currentTime = new Date();
+        const timeDiff = Math.floor((currentTime - startTime) / 1000); // Diferencia en segundos
+        return `${timeDiff} s`;
+      }
+      return '0 s';
     }
   </script>
 </body>
